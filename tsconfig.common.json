@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "lib": [
+      "esnext"
+    ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "paths": {
+      "@enre-ts/shared": [
+        "packages/enre-shared/src"
+      ],
+      "@enre-ts/naming": [
+        "packages/enre-naming/src"
+      ],
+      "@enre-ts/path-finder": [
+        "packages/enre-path-finder/src"
+      ],
+      "@enre-ts/location": [
+        "packages/enre-location/src"
+      ],
+      "@enre-ts/test-finder": [
+        "packages/enre-test-finder/src"
+      ],
+      "@enre-ts/doc-validator": [
+        "packages/enre-doc-validator/src"
+      ],
+      "@enre-ts/doc-parser": [
+        "packages/enre-doc-parser/src"
+      ],
+      "@enre-ts/data": [
+        "packages/enre-data/src"
+      ],
+      "@enre-ts/core": [
+        "packages/enre-core/src"
+      ],
+      "@enre-ts/cli": [
+        "packages/enre-cli/src"
+      ],
+      "@enre-ts/test-generator": [
+        "packages/enre-test-generator/src"
+      ]
+    },
+    "removeComments": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "esnext"
+  }
+}

@@ -1,0 +1,30 @@
+# IDE setting
+.idea
+
+node_modules
+
+# Compiled code
+**/lib/*
+
+# Auto generated testcase files from docs, filename starts with _
+tests/cases/_*/_*
+
+# Auto generated testsuite files from docs, filename starts with _
+tests/suites/_*.spec.js
+
+# Cross-tester generated files
+tests/und
+tests/enre
+tests/sparrow
+
+# Jest coverage results
+coverage
+
+# TypeScript build info
+**/*.tsbuildinfo
+
+# VSCode settings
+.vscode
+
+# Publish script's output
+.clean-build-tag

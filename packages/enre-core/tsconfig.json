@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.common.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib"
+  },
+  "exclude": [
+    "lib"
+  ],
+  "references": [
+    {
+      "path": "../enre-shared"
+    },
+    {
+      "path": "../enre-naming"
+    },
+    {
+      "path": "../enre-location"
+    },
+    {
+      "path": "../enre-data"
+    },
+    {
+      "path": "../enre-path-finder"
+    }
+  ]
+}

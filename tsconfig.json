@@ -1,0 +1,38 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "packages/enre-shared"
+    },
+    {
+      "path": "packages/enre-naming"
+    },
+    {
+      "path": "packages/enre-path-finder"
+    },
+    {
+      "path": "packages/enre-location"
+    },
+    {
+      "path": "packages/enre-test-finder"
+    },
+    {
+      "path": "packages/enre-doc-validator"
+    },
+    {
+      "path": "packages/enre-doc-parser"
+    },
+    {
+      "path": "packages/enre-data"
+    },
+    {
+      "path": "packages/enre-core"
+    },
+    {
+      "path": "packages/enre-cli"
+    },
+    {
+      "path": "packages/enre-test-generator"
+    }
+  ]
+}
