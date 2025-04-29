@@ -67,6 +67,7 @@
     "@babel/types": "^7.21.5",
     "commander": "^10.0.1",
     "d3": "^7.9.0",
+    "sigma": "^3.0.1",
     "winston": "^3.11.0"
   },
   "workspaces": [

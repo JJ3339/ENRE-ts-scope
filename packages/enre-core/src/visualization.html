@@ -1,16 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Scope Graph Visualization</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    svg { width: 100%; height: 100vh; }
-    line { stroke: #999; stroke-opacity: 0.6; }
-    circle { stroke: #fff; stroke-width: 1.5px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scope Graph Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        svg { width: 100%; height: 100vh; }
+        line { stroke: #999; stroke-opacity: 0.6; }
+        circle { stroke: #fff; stroke-width: 1.5px; }
+    </style>
 </head>
 <body>
-  <script src="./dist/visualize.js"></script> <!-- 编译后的JS文件 -->
+    <script>
+        // 假设 sGraph 是从 s.ts 中导出的全局作用域容器实例
+        const sGraph = {
+            // 这里需要实际引入 s.ts 中的全局作用域容器实例
+            allNodes: [],
+            allEdges: []
+        };
+
+        function visualizeScopeGraph(scopeContainer) {
+            // 生成节点时强制初始化 x/y
+            const nodes = scopeContainer.allNodes.map(node => ({
+                id: node.entity.id,
+                name: node.entity.name.codeName,
+                type: node.entity.type,
+                x: Math.random() * 800,
+                y: Math.random() * 600
+            }));
+
+            // 生成链接时直接引用节点对象（而非 id）
+            const links = scopeContainer.allEdges.map(edge => {
+                const sourceNode = nodes.find(n => n.id === edge.from.entity.id);
+                const targetNode = nodes.find(n => n.id === edge.to.entity.id);
+                return {
+                    source: sourceNode,
+                    target: targetNode,
+                    value: 2
+                };
+            });
+
+            const width = 800;
+            const height = 600;
+
+            const svg = d3.select('body')
+               .append('svg')
+               .attr('width', width)
+               .attr('height', height);
+
+            // 强制指定仿真节点的泛型类型
+            const simulation = d3.forceSimulation(nodes)
+               .force('link', d3.forceLink(links)
+                   .distance(100)
+               )
+               .force('charge', d3.forceManyBody().strength(-100))
+               .force('center', d3.forceCenter(width / 2, height / 2));
+
+            // 渲染链接
+            const link = svg.append('g')
+               .selectAll('line')
+               .data(links)
+               .join('line')
+               .attr('stroke-width', d => Math.sqrt(d.value));
+
+            // 渲染节点
+            const node = svg.append('g')
+               .selectAll('circle')
+               .data(nodes)
+               .join('circle')
+               .attr('r', 5);
+
+            // 在 tick 事件中直接访问节点属性
+            simulation.on('tick', () => {
+                link
+                   .attr('x1', d => d.source.x)
+                   .attr('y1', d => d.source.y)
+                   .attr('x2', d => d.target.x)
+                   .attr('y2', d => d.target.y);
+
+                node
+                   .attr('cx', d => d.x)
+                   .attr('cy', d => d.y);
+            });
+        }
+
+        // 调用可视化函数
+        visualizeScopeGraph(sGraph);
+    </script>
 </body>
 </html>
