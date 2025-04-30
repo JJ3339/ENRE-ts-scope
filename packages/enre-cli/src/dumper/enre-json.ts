@@ -1,4 +1,4 @@
-import {eGraph, release, rGraph} from '@enre-ts/data';
+import {eGraph, release, rGraph, sGraph} from '@enre-ts/data';
 import {expandENRELocation} from '@enre-ts/location';
 import fs from 'node:fs/promises';
 import {createLogger} from '@enre-ts/shared';
@@ -24,7 +24,11 @@ export default function (opts: any) {
   release();
 
   // ENRE-JSON output format
-  const obj = {entities: [] as any[], relations: [] as any[]};
+  const obj = {
+    entities: [] as any[], 
+    relations: [] as any[],
+    scopes: [] as any[]
+  };
 
   for (const e of eGraph.all) {
     const tmp = {} as any;
@@ -67,6 +71,27 @@ export default function (opts: any) {
     }
     obj.relations.push(tmp);
   }
+
+  for (const s of sGraph.allNodes) {
+    const tmp = {} as any;
+    for (const prop of Object.getOwnPropertyNames(s.entity)) {
+        if(prop === 'name'){
+            tmp[prop] = s.entity.name.codeName;
+        }
+        else if (prop === 'location') {
+            tmp[prop] = expandENRELocation(s.entity);
+        }
+        else if (ignorePropList.includes(prop)) {
+        }
+        else if (['sourceFile', 'parent'].indexOf(prop) !== -1) {
+            tmp[prop] = (s.entity as any)[prop]?.id;
+        }
+        else {
+            tmp[prop] = (s.entity as any)[prop];
+        }
+        obj.scopes.push(tmp);
+     }
+}
 
   fs.writeFile(opts.output, JSON.stringify(obj, null, '\t'));
   logger.info(`Results dumped to ${opts.output} in JSON format with ${obj.entities.length} entities and ${obj.relations.length} dependencies`);
