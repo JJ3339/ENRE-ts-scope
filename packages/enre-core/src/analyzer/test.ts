@@ -9,10 +9,33 @@ function outerFunction() {
     function innerFunction() {
         const innerVar = 30;
         console.log(innerVar);
+        function innerMostFunction() {
+            const innerMostVar = 70;
+            console.log(innerMostVar);
+        }
+        innerMostFunction();
     }
 
     innerFunction();
-}
+    function innerFunction2() {
+        const innerVar2 = 80;
+        console.log(innerVar2);
+    }
+    function innerFunction3() {
+        const innerVar3 = 90;
+        console.log(innerVar3);
+        function innerMostFunction2() {
+            const innerMostVar2 = 110;
+            console.log(innerMostVar2);
+        }
+        innerMostFunction2();
+        class MyClass2 {
+        }
+    }
+    innerFunction2();
+    innerFunction3();
+    }
+
 
 outerFunction();
 
@@ -30,5 +53,3 @@ class MyClass {
     }
 }
 
-const myObject = new MyClass();
-myObject.classMethod();

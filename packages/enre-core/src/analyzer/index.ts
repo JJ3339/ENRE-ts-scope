@@ -54,22 +54,22 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
     // 可视化作用域图
     //visualizeScopeGraph(sGraph);
 
-    logger.verbose('所有作用域节点信息:');
+    console.log('所有作用域节点信息:');
     sGraph.allNodes.forEach((node, index) => {
-        logger.verbose(`节点 ${index + 1}:`);
-        logger.verbose(`  名称: ${node.entity.name.codeName || node.entity.name}`);
-        logger.verbose(`  类型: ${node.entity.type}`);
+        console.log(`节点 ${index + 1}:`);
+        console.log(`  名称: ${node.entity.name.codeName || node.entity.name}`);
+        console.log(`  类型: ${node.entity.type}`);
         if (node.entity.parent) {
-            logger.verbose(`  父节点 name: ${node.entity.parent.name}`);
+            console.log(`  父节点 ${node.entity.parent.name.payload}`);
         }
     });
 
     // 打印所有边信息
-    logger.verbose('\n所有作用域边信息:');
+    console.log('\n所有作用域边信息:');
     sGraph.allEdges.forEach((edge, index) => {
-        logger.verbose(`边 ${index + 1}:`);
-        logger.verbose(`  起点: ${edge.from.entity.name.codeName || edge.from.entity.name}`);
-        logger.verbose(`  终点: ${edge.to.entity.name.codeName || edge.to.entity.name}`);
+        console.log(`边 ${index + 1}:`);
+        console.log(`  起点: ${edge.from.entity.name.codeName || edge.from.entity.name}`);
+        console.log(`  终点: ${edge.to.entity.name.codeName || edge.to.entity.name}`);
     });
 };
 

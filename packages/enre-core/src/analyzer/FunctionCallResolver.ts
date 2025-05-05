@@ -5,10 +5,7 @@ import {
 } from "@enre-ts/data";
 import { ENRELocation } from "@enre-ts/location";
 import lookup from "./linker/lookup";
-import {
-  createRelationCall,
-  recordRelationCall,
-} from "packages/enre-data/src/relation/variant/call";
+import { recordRelationCall } from "@enre-ts/data";
 
 // 定义查找函数定义的辅助函数
 export function findFunctionDefinition(

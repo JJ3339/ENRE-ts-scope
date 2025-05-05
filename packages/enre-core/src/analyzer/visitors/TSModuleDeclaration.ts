@@ -55,6 +55,7 @@ export default {
     }
 
     scope.push(entity);
+    // sGraph.add(entity);
   },
 
   exit: (path: PathType, {scope}: ENREContext) => {
