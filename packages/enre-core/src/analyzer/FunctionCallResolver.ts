@@ -60,16 +60,30 @@ export function resolveFunctionCall(
   calleeName: string,
   location: ENRELocation
 ): boolean {
-  if (!caller.parent) {
+  let callerScope: ENREEntityCollectionScoping;
+  if (caller.type === "function") {
+    callerScope = caller.parent as ENREEntityCollectionScoping;
+  } else if (caller.type === "class" || caller.type === "interface") {
+    callerScope = caller.parent as ENREEntityCollectionScoping;
+  } else {
+    // 如果调用者不是函数或类，返回 false
     return false;
   }
-
-  const callerScope = caller.parent as ENREEntityCollectionScoping;
+  if (caller.parent) {
+    callerScope = caller.parent as ENREEntityCollectionScoping;
+  } else {
+    // 如果调用者没有父作用域，使用全局作用域
+    const globalScope = sGraph.allNodes[0];
+    if (globalScope) {
+      callerScope = globalScope.entity as ENREEntityCollectionScoping;
+    } else {
+      return false;
+    }
+  }
   const callee = findFunctionDefinition(callerScope, calleeName);
 
   if (callee) {
     // 记录调用关系
-    createRelationCall(caller, callee, location, { isNew: false });
     recordRelationCall(caller, callee, location, { isNew: false });
     return true;
   }

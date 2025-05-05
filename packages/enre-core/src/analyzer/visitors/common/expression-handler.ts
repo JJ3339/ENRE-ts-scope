@@ -24,7 +24,7 @@ import {ENREEntityCollectionScoping, postponedTask} from '@enre-ts/data';
 import {ENRELocation, toENRELocation, ToENRELocationPolicy} from '@enre-ts/location';
 import {ENREContext} from '../../context';
 import resolveJSObj, {createJSObjRepr, JSObjRepr} from './literal-handler';
-
+import {resolveFunctionCall} from '../../FunctionCallResolver';
 
 /**
  * Types
@@ -301,6 +301,40 @@ function recursiveTraverse(
           };
         }
       }
+
+      // 处理函数调用
+        // 获取调用者信息
+        const caller = scope.last(); 
+        let calleeName: string | symbol | undefined = undefined;
+        // 获取被调用函数的信息
+        if (node.callee.type === 'MemberExpression') {
+          const calleeProperty = node.callee.property;
+          if (calleeProperty.type === 'Identifier') {
+            calleeName = calleeProperty.name;
+          } else if (calleeProperty.type === 'StringLiteral') {
+            calleeName = calleeProperty.value;
+          } else if (calleeProperty.type === 'NumericLiteral') {
+            calleeName = calleeProperty.value.toString();
+          }
+        } else if (node.callee.type === 'Identifier') {
+          calleeName = node.callee.name;
+        }
+
+        const location = toENRELocation(node.callee.loc, ToENRELocationPolicy.PartialEnd);
+
+        // 调用 FunctionCallResolver 解析函数调用
+        if (typeof calleeName === 'string') {
+          const resolved = resolveFunctionCall(caller, calleeName, location);
+          if (resolved) {
+            // 输出
+            console.log(`成功解析函数调用: ${calleeName}`);
+          } else {
+            console.log(`未能解析函数调用: ${calleeName}`);
+          }
+        }
+        else {
+          console.log('未能获取被调用函数的名称');
+        }
 
       tokenStream.push({
         operation,
