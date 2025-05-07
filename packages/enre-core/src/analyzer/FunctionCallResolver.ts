@@ -38,8 +38,11 @@ export function findFunctionDefinition(
   }
 
   // 如果当前作用域没有找到，递归查找父作用域
-  if (scope.parent) {
+/*  if (scope.parent) {
     const parentNode = sGraph.allNodes.find((node) => node.entity === scope.parent);
+
+    // console.log(scope.name,'的父作用域:', parentNode?.entity.name);  
+
     if (parentNode) {
       return findFunctionDefinition(
         parentNode.entity as ENREEntityCollectionScoping,
@@ -48,7 +51,7 @@ export function findFunctionDefinition(
       );
     }
   }
-
+*/
   return null;
 }
 
@@ -58,25 +61,16 @@ export function resolveFunctionCall(
   location: ENRELocation
 ): boolean {
   let callerScope: ENREEntityCollectionScoping;
+
   if (caller.type === "function") {
-    callerScope = caller.parent as ENREEntityCollectionScoping;
+    callerScope = caller as ENREEntityCollectionScoping;
   } else if (caller.type === "class" || caller.type === "interface") {
-    callerScope = caller.parent as ENREEntityCollectionScoping;
+    callerScope = caller as ENREEntityCollectionScoping;
   } else {
     // 如果调用者不是函数或类，返回 false
     return false;
   }
-  if (caller.parent) {
-    callerScope = caller.parent as ENREEntityCollectionScoping;
-  } else {
-    // 如果调用者没有父作用域，使用全局作用域
-    const globalScope = sGraph.allNodes[0];
-    if (globalScope) {
-      callerScope = globalScope.entity as ENREEntityCollectionScoping;
-    } else {
-      return false;
-    }
-  }
+
   const callee = findFunctionDefinition(callerScope, calleeName);
 
   if (callee) {

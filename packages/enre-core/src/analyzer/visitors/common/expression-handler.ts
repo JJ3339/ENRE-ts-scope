@@ -20,7 +20,7 @@ import {
   SpreadElement,
   ThrowStatement
 } from '@babel/types';
-import {ENREEntityCollectionScoping, postponedTask} from '@enre-ts/data';
+import {ENREEntityCollectionScoping, postponedTask, sGraph} from '@enre-ts/data';
 import {ENRELocation, toENRELocation, ToENRELocationPolicy} from '@enre-ts/location';
 import {ENREContext} from '../../context';
 import resolveJSObj, {createJSObjRepr, JSObjRepr} from './literal-handler';
@@ -304,8 +304,18 @@ function recursiveTraverse(
 
       // 处理函数调用
         // 获取调用者信息
-        const caller = scope.last(); 
+        const caller = scope.last();
         let calleeName: string | symbol | undefined = undefined;
+
+            // 检查是否为 console.log 调用
+        if (node.callee.type === 'MemberExpression' &&
+            node.callee.object.type === 'Identifier' && node.callee.object.name === 'console' &&
+            node.callee.property.type === 'Identifier' && node.callee.property.name === 'log') {
+            // 若为 console.log 调用，可根据需求调整调用者信息
+          break;
+        }
+    
+
         // 获取被调用函数的信息
         if (node.callee.type === 'MemberExpression') {
           const calleeProperty = node.callee.property;

@@ -10,6 +10,7 @@ import {logger} from '../index';
 import { sGraph, ENREScopePredicates } from '@enre-ts/data'; // 引入 sGraph 和 ENREScopePredicates
 import Sigma from 'sigma';
 
+
 /**
  * Read, parse and analyze a single file.
  */
@@ -41,6 +42,7 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
 
     if (ast) {
         const context = createENREContext(fileEntity);
+        sGraph.add(fileEntity); // 将文件实体添加到作用域图中(全局作用域)
         eGraph.onAdd = createModifierHandler(context);
 
         if (process.env.NODE_ENV === 'test') {

@@ -1,6 +1,5 @@
 // packages/enre-data/src/container/s.ts
 import {ENREEntityCollectionScoping} from '@enre-ts/data';
-import util from 'util';
 
 // 定义作用域图的节点
 class ScopeNode {
@@ -42,8 +41,10 @@ const createScopeContainer = () => {
                     _edges.push(newEdge);
                 }
             }
-            console.log('Nodes: ', util.inspect(_s));
-            console.log('Edges: ', util.inspect(_edges));
+        },
+
+        get last() {
+            return _s[_s.length - 1];
         },
 
         // 获取所有作用域节点
@@ -89,5 +90,5 @@ const createScopeContainer = () => {
     };
 };
 
-// 导出全局作用域容器实例
+//导出全局作用域容器实例
 export default createScopeContainer();
