@@ -12,12 +12,17 @@ export function findFunctionDefinition(
   scope: ENREEntityCollectionScoping,
   calleeName: string,
   visited = new Set<ENREEntityCollectionScoping>()
-): ENREEntityCollectionAll | null {
+): { callee: ENREEntityCollectionAll | null; scopeName: string | undefined } {
   // 防止循环引用导致的无限递归
   if (visited.has(scope)) {
-    return null;
+    return {callee: null, scopeName: undefined};
   }
   visited.add(scope);
+
+  let foundScopeName: string | undefined = undefined;
+  const onFoundScopeName = (scopeName: string | undefined) => {
+    foundScopeName = scopeName;
+  };
 
   // 使用lookup函数查找函数定义
   const callee = lookup({
@@ -26,15 +31,21 @@ export function findFunctionDefinition(
     at: scope,
     localOnly: false,
     exportsOnly: false,
-  });
+  }, false, onFoundScopeName);
 
   if (Array.isArray(callee)) {
     // 如果返回的是数组，取第一个元素
-    return callee.length > 0 ? callee[0] : null;
+    if (callee.length > 0) {
+      return { callee: callee[0], scopeName: foundScopeName };
+    }
+    else{
+      return { callee: null, scopeName: undefined };  
+
+    }
   }
 
   if (callee) {
-    return callee;
+    return { callee, scopeName: foundScopeName };
   }
 
   // 如果当前作用域没有找到，递归查找父作用域
@@ -52,32 +63,32 @@ export function findFunctionDefinition(
     }
   }
 */
-  return null;
+  return {callee: null, scopeName: undefined};
 }
 
 export function resolveFunctionCall(
   caller: ENREEntityCollectionAll,
   calleeName: string,
   location: ENRELocation
-): boolean {
+): { resolved: boolean; scopeName: string | undefined } {
   let callerScope: ENREEntityCollectionScoping;
 
-  if (caller.type === "function") {
+  if (caller.type === "function" || caller.type === "file") {
     callerScope = caller as ENREEntityCollectionScoping;
   } else if (caller.type === "class" || caller.type === "interface") {
     callerScope = caller as ENREEntityCollectionScoping;
   } else {
     // 如果调用者不是函数或类，返回 false
-    return false;
+    return {resolved: false, scopeName: undefined};
   }
 
-  const callee = findFunctionDefinition(callerScope, calleeName);
+  const {callee, scopeName} = findFunctionDefinition(callerScope, calleeName);
 
   if (callee) {
     // 记录调用关系
     recordRelationCall(caller, callee, location, { isNew: false });
-    return true;
+    return { resolved: true, scopeName };
   }
 
-  return false;
+  return { resolved: false, scopeName };
 }

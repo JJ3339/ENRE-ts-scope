@@ -11,3 +11,5 @@ function test(){
   }
   outerFunction();
 }
+
+test();

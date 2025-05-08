@@ -8,15 +8,15 @@ import {
 } from '@enre-ts/data';
 import {logger} from '@enre-ts/core';
 
-export default function (sg: SearchingGuidance, omitAlias = false): ENREEntityCollectionAll | ENREEntityCollectionAll[] | undefined {
-  /**
+// 新增一个可选的回调函数参数
+export default function (sg: SearchingGuidance, omitAlias = false, onFoundScopeName?: (scopeName: string | undefined) => void): ENREEntityCollectionAll | ENREEntityCollectionAll[] | undefined {
+    /**
    * Though multiple entities in the same scope cannot have duplicated identifier,
    * it is still possible for a JS value entity and TS type entity to remain
    * the same identifier, while importing/exporting, it is both two entities
    * are imported/exported.
    */
   const results: ENREEntityCollectionAll[] = [];
-
   let curr = sg.at;
 
   // Find only default export
@@ -52,6 +52,9 @@ export default function (sg: SearchingGuidance, omitAlias = false): ENREEntityCo
         if ((sg.role === 'value' && valueEntityTypes.includes(exportRelation.to.type)) ||
           // @ts-ignore
           (sg.role === 'type' && typeEntityTypes.includes(exportRelation.to.type))) {
+          if (onFoundScopeName) {
+            onFoundScopeName(curr.name.payload);
+          }
           return returned;
         } else if (sg.role === 'any') {
           results.push(returned);
@@ -70,6 +73,9 @@ export default function (sg: SearchingGuidance, omitAlias = false): ENREEntityCo
           if ((sg.role === 'value' && valueEntityTypes.includes(e.type)) ||
             // @ts-ignore
             (sg.role === 'type' && typeEntityTypes.includes(e.type))) {
+            if (onFoundScopeName) {
+              onFoundScopeName(curr.name.payload);
+            }
             return e;
           } else if (sg.role === 'any') {
             // Does not return in case two entities are not in the same scope
@@ -103,6 +109,9 @@ export default function (sg: SearchingGuidance, omitAlias = false): ENREEntityCo
               if ((sg.role === 'value' && valueEntityTypes.includes(importRelation.to.type)) ||
                 // @ts-ignore
                 (sg.role === 'type' && typeEntityTypes.includes(importRelation.to.type))) {
+                if (onFoundScopeName) {
+                  onFoundScopeName(curr.name.payload);
+                }
                 return returned;
               } else if (sg.role === 'any') {
                 results.push(returned);

@@ -25,7 +25,6 @@ import {ENRELocation, toENRELocation, ToENRELocationPolicy} from '@enre-ts/locat
 import {ENREContext} from '../../context';
 import resolveJSObj, {createJSObjRepr, JSObjRepr} from './literal-handler';
 import {resolveFunctionCall} from '../../FunctionCallResolver';
-
 /**
  * Types
  */
@@ -334,10 +333,10 @@ function recursiveTraverse(
 
         // 调用 FunctionCallResolver 解析函数调用
         if (typeof calleeName === 'string') {
-          const resolved = resolveFunctionCall(caller, calleeName, location);
+          const {resolved,scopeName} = resolveFunctionCall(caller, calleeName, location);
           if (resolved) {
             // 输出
-            console.log(`成功解析函数调用: ${calleeName}`);
+            console.log(`成功解析函数调用: ${calleeName}，在作用域: ${scopeName} 中找到`);
           } else {
             console.log(`未能解析函数调用: ${calleeName}`);
           }
