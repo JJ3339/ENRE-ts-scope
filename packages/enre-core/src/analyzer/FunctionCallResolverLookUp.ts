@@ -8,7 +8,7 @@ import lookup from "./linker/lookup";
 import { recordRelationCall } from "@enre-ts/data";
 
 // 定义查找函数定义的辅助函数
-export function findFunctionDefinition(
+export function findFunctionDefinitionLookUp(
   scope: ENREEntityCollectionScoping,
   calleeName: string,
   visited = new Set<ENREEntityCollectionScoping>()
@@ -55,7 +55,7 @@ export function findFunctionDefinition(
     // console.log(scope.name,'的父作用域:', parentNode?.entity.name);  
 
     if (parentNode) {
-      return findFunctionDefinition(
+      return findFunctionDefinitionLookUp(
         parentNode.entity as ENREEntityCollectionScoping,
         calleeName,
         visited
@@ -66,7 +66,7 @@ export function findFunctionDefinition(
   return {callee: null, scopeName: undefined};
 }
 
-export function resolveFunctionCall(
+export function resolveFunctionCallLookUp(
   caller: ENREEntityCollectionAll,
   calleeName: string,
   location: ENRELocation
@@ -82,7 +82,7 @@ export function resolveFunctionCall(
     return {resolved: false, scopeName: undefined};
   }
 
-  const {callee, scopeName} = findFunctionDefinition(callerScope, calleeName);
+  const {callee, scopeName} = findFunctionDefinitionLookUp(callerScope, calleeName);
 
   if (callee) {
     // 记录调用关系

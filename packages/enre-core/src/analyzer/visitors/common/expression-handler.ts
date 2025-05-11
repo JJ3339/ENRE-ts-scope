@@ -24,7 +24,7 @@ import {ENREEntityCollectionScoping, postponedTask, sGraph} from '@enre-ts/data'
 import {ENRELocation, toENRELocation, ToENRELocationPolicy} from '@enre-ts/location';
 import {ENREContext} from '../../context';
 import resolveJSObj, {createJSObjRepr, JSObjRepr} from './literal-handler';
-import {resolveFunctionCall} from '../../FunctionCallResolver';
+import {resolveFunctionCallLookUp} from '../../FunctionCallResolverLookUp';
 /**
  * Types
  */
@@ -333,7 +333,7 @@ function recursiveTraverse(
 
         // 调用 FunctionCallResolver 解析函数调用
         if (typeof calleeName === 'string') {
-          const {resolved,scopeName} = resolveFunctionCall(caller, calleeName, location);
+          const {resolved,scopeName} = resolveFunctionCallLookUp(caller, calleeName, location);
           if (resolved) {
             // 输出
             console.log(`成功解析函数调用: ${calleeName}，在作用域: ${scopeName} 中找到`);

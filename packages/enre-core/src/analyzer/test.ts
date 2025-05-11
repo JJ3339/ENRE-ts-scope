@@ -37,7 +37,7 @@ function outerFunction() {
     }
 
 
-outerFunction();
+outerFunction(); 
 
 // 类作用域
 class MyClass {
