@@ -68,6 +68,7 @@ export default {
     scope.last<ENREEntityCollectionAnyChildren>().children.push(entity);
     scope.push(entity);
     sGraph.add(entity);
+    sGraph.addFunction(scope.last(), entity);
 
     parameterHandler(path.node, scope, logs);
   },

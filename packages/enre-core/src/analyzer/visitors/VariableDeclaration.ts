@@ -16,6 +16,7 @@ import {
   postponedTask,
   recordEntityVariable,
   recordRelationSet,
+  sGraph,
 } from '@enre-ts/data';
 import {ENRELocation} from '@enre-ts/location';
 import {ENREContext} from '../context';
@@ -38,6 +39,7 @@ const buildOnRecord = (kind: variableKind, hasInit: boolean) => {
     );
 
     scope.last<ENREEntityCollectionAnyChildren>().children.push(entity);
+    sGraph.addVariable(scope.last(), entity);
 
     if (hasInit) {
       // Record relation `set`

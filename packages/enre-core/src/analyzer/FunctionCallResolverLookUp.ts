@@ -1,6 +1,7 @@
 import {
   ENREEntityCollectionAll,
   ENREEntityCollectionScoping,
+  ENREEntityFunction,
   sGraph,
 } from "@enre-ts/data";
 import { ENRELocation } from "@enre-ts/location";
@@ -48,23 +49,11 @@ export function findFunctionDefinitionLookUp(
     return { callee, scopeName: foundScopeName };
   }
 
-  // 如果当前作用域没有找到，递归查找父作用域
-/*  if (scope.parent) {
-    const parentNode = sGraph.allNodes.find((node) => node.entity === scope.parent);
-
-    // console.log(scope.name,'的父作用域:', parentNode?.entity.name);  
-
-    if (parentNode) {
-      return findFunctionDefinitionLookUp(
-        parentNode.entity as ENREEntityCollectionScoping,
-        calleeName,
-        visited
-      );
-    }
-  }
-*/
   return {callee: null, scopeName: undefined};
 }
+
+
+
 
 export function resolveFunctionCallLookUp(
   caller: ENREEntityCollectionAll,
@@ -87,6 +76,8 @@ export function resolveFunctionCallLookUp(
   if (callee) {
     // 记录调用关系
     recordRelationCall(caller, callee, location, { isNew: false });
+    //添加函数调用关系到图中
+    sGraph.addFunctionCall(callerScope, callee as ENREEntityFunction);
     return { resolved: true, scopeName };
   }
 

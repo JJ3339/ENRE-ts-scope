@@ -1,16 +1,23 @@
 // packages/enre-data/src/container/s.ts
-import {ENREEntityCollectionScoping} from '@enre-ts/data';
+import {ENREEntityCollectionScoping, ENREEntityFunction, ENREEntityVariable} from '@enre-ts/data';
 
 // 定义作用域图的节点
 class ScopeNode {
     constructor(
         public entity: ENREEntityCollectionScoping, 
-        public children: ScopeNode[] = []) {}
+        public children: ScopeNode[] = [],
+        public variables:ENREEntityVariable[] = [],
+        public functions:ENREEntityFunction[] = [],    
+    ) {}
 }
 
 // 定义作用域图的边
 class ScopeEdge {
-    constructor(public from: ScopeNode, public to: ScopeNode) {}
+    constructor(
+        public from: ScopeNode, 
+        public to: ScopeNode,
+        public type: 'parent' | 'call'
+    ) {}
 }
 
 // 定义作用域查询条件接口
@@ -37,9 +44,35 @@ const createScopeContainer = () => {
                 const parentNode = _s.find(node => node.entity === scope.parent);
                 if (parentNode) {
                     parentNode.children.push(newNode);
-                    const newEdge = new ScopeEdge(parentNode, newNode);
+                    const newEdge = new ScopeEdge(parentNode, newNode, 'parent');
                     _edges.push(newEdge);
                 }
+            }
+        },
+
+        //添加变量定义
+        addVariable:(scope: ENREEntityCollectionScoping, variable: ENREEntityVariable) => {
+            const scopeNode = _s.find(node => node.entity === scope);
+            if (scopeNode) {
+                scopeNode.variables.push(variable);
+            }
+        },
+
+        //添加函数定义
+        addFunction: (scope: ENREEntityCollectionScoping, func: ENREEntityFunction) => {
+            const scopeNode = _s.find(node => node.entity === scope);
+            if (scopeNode) {
+                scopeNode.functions.push(func);
+            }
+        },
+
+        // 添加函数调用关系
+        addFunctionCall: (callerScope: ENREEntityCollectionScoping, callee: ENREEntityFunction) => {
+            const callerNode = _s.find(node => node.entity === callerScope);
+            const calleeNode = _s.find(node => node.functions.includes(callee));
+            if (callerNode && calleeNode) {
+                const newEdge = new ScopeEdge(callerNode, calleeNode, 'call');
+                _edges.push(newEdge);
             }
         },
 
