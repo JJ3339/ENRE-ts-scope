@@ -64,6 +64,14 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
         if (node.entity.parent) {
             console.log(`  父节点 ${node.entity.parent.name.payload}`);
         }
+        // 打印节点内的变量声明
+        if (node.variables.length > 0) {
+            node.variables.forEach((variable, varIndex) => {
+            console.log(`节点 ${index + 1}下:变量 ${varIndex + 1}: ${variable.name.codeName}数值为：${variable.value}`);
+        });
+        } else {
+            console.log('无变量声明');
+        }
     });
 
     // 打印所有边信息

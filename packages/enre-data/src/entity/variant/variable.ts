@@ -8,6 +8,7 @@ import {recordEntity} from '../../utils/wrapper';
 export interface ENREEntityVariable extends ENREEntityAbilityBase {
   type: 'variable';
   kind: variableKind;
+  value?: any;
 }
 
 export const createEntityVariable = (

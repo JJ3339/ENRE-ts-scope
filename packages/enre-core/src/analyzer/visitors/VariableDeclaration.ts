@@ -29,7 +29,7 @@ import expressionHandler, {
   DescendPostponedTask
 } from './common/expression-handler';
 
-const buildOnRecord = (kind: variableKind, hasInit: boolean) => {
+const buildOnRecord = (kind: variableKind, hasInit: boolean, initValue?: any) => {
   return (name: string, location: ENRELocation, scope: ENREContext['scope']) => {
     const entity = recordEntityVariable(
       new ENREName('Norm', name),
@@ -37,6 +37,11 @@ const buildOnRecord = (kind: variableKind, hasInit: boolean) => {
       scope.last(),
       {kind},
     );
+
+    // 添加变量值
+    if (hasInit && initValue) {
+      (entity as any).value = initValue;
+    }
 
     scope.last<ENREEntityCollectionAnyChildren>().children.push(entity);
     sGraph.addVariable(scope.last(), entity);
@@ -72,11 +77,16 @@ export default {
         objRepr = resolveJSObj((path.parent as ForOfStatement).right);
       }
 
+      let initValue: any;
+      if (objRepr && 'value' in objRepr) {
+        initValue = objRepr.value;
+      }
+
       const returned = traverseBindingPattern<ENREEntityVariable>(
         declarator.id,
         scope,
         undefined,
-        buildOnRecord(kind as variableKind, !!objRepr),
+        buildOnRecord(kind as variableKind, !!objRepr, initValue),
       );
 
       if (returned && objRepr) {

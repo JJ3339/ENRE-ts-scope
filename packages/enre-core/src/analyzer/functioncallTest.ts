@@ -1,4 +1,4 @@
-function test(){
+function test2(){
   function outerFunction(){
     function innerFunction(){
       console.log('innerFunction');
@@ -12,4 +12,4 @@ function test(){
   outerFunction();
 }
 
-test();
+test2();
