@@ -8,7 +8,7 @@ export type sourceLang = 'js' | 'ts' | 'json';
  */
 export const supportedFileExt = ['.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs', '.mts', '.cts', '.json'] as const;
 
-export type variableKind = 'let' | 'const' | 'var';
+export type variableKind = 'let' | 'const' | 'var'| undefined;
 export type TSVisibility = 'public' | 'protected' | 'private';
 export type methodKind = 'constructor' | 'method' | 'get' | 'set';
 export type blockKind = 'any' | 'class-static-block';

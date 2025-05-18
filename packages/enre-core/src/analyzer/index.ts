@@ -70,6 +70,7 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
             variable.value
           }`
         );
+        console.log(`  变量类型: ${variable.callType}`);
       });
     } else {
       console.log("无变量声明");
@@ -103,15 +104,30 @@ app.get("/sGraph", (req, res) => {
     return {
       id: index,  // 使用数组下标作为新ID
       name: node.entity.name.codeName,
-      type: node.entity.type
+      type: node.entity.type,
+      variables: node.variables.map(variable => ({
+        name: variable.name.codeName,
+        value: variable.value,
+        type: variable.callType
+      }))
     };
   });
 
-  const edges = sGraph.allEdges.map(edge => ({
-    source: nodeIdMap.get(edge.from.entity.name.payload),  // 转换原始ID为下标
-    target: nodeIdMap.get(edge.to.entity.name.payload),    // 转换原始ID为下标
-    type: edge.type
-  }));
+  const edges = sGraph.allEdges.map(edge => {
+    const sourceIndex = nodeIdMap.get(edge.from.entity.name.payload);
+    const targetIndex = nodeIdMap.get(edge.to.entity.name.payload);
+
+    if (sourceIndex === undefined || targetIndex === undefined) {
+      console.error(`Error mapping edge: source or target index is undefined`);
+      return null;
+    }
+
+    return {
+      source: sourceIndex,
+      target: targetIndex,
+      type: edge.type
+    };
+  }).filter(edge => edge !== null);
 
   const sGraphData = {
     allNodes: nodes,

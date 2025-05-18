@@ -14,6 +14,7 @@ import {ENREEntityCollectionInFile, ENREEntityNamespace, id, recordEntityNamespa
 import {toENRELocation} from '@enre-ts/location';
 import ENREName from '@enre-ts/naming';
 import {ENREContext} from '../context';
+import { sGraph } from '@enre-ts/data';
 
 type PathType = NodePath<TSModuleDeclaration>
 
@@ -55,7 +56,7 @@ export default {
     }
 
     scope.push(entity);
-    // sGraph.add(entity);
+    //sGraph.add(entity);
   },
 
   exit: (path: PathType, {scope}: ENREContext) => {

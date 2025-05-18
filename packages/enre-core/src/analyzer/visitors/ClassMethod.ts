@@ -30,6 +30,7 @@ import {TSVisibility} from '@enre-ts/shared';
 import {ENREScope} from '../context/scope';
 import parameterHandler from './common/parameter-handler';
 import {createJSObjRepr} from './common/literal-handler';
+import { sGraph } from '@enre-ts/data';
 
 const onRecordField = (name: string, location: ENRELocation, scope: ENREScope, TSVisibility: TSVisibility): ENREEntityField => {
   const entity = recordEntityField(
@@ -197,6 +198,7 @@ export default {
 
       scope.last<ENREEntityCollectionAnyChildren>().children.push(entity);
       scope.push(entity);
+      sGraph.add(entity)
 
       parameterHandler(path.node, scope, logs, onRecordField);
     }

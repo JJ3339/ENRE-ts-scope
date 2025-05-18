@@ -61,51 +61,101 @@
         fill: #666;
         stroke: none;
       }
+
+      .variable-node {
+        fill: #6baed6;
+        stroke: #08519c;
+        cursor: pointer;
+      }
+
+      .variable-label {
+        font-size: 8px;
+        fill: #08306b;
+        pointer-events: none;
+      }
+
+      .tooltip {
+        position: absolute;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        border-radius: 4px;
+        pointer-events: none;
+        font-size: 12px;
+        font-family: sans-serif;
+      }
     </style>
   </head>
   <body>
+    <div class="tooltip"></div>
     <script>
       async function visualizeScopeGraph() {
         try {
           const response = await fetch("http://localhost:3000/sGraph");
           const sGraphData = await response.json();
 
-          // 处理节点数据
-          const nodes = sGraphData.allNodes.map((node) => ({
+          // 处理原始节点
+          const originalNodes = sGraphData.allNodes.map((node) => ({
             id: node.id,
             name: node.name,
             type: node.type,
+            isVariable: false,
             x: Math.random() * 800,
             y: Math.random() * 600,
           }));
 
-          // 处理边数据
-          const links = sGraphData.allEdges.map((edge) => {
-            const sourceNode = nodes.find((n) => n.id === edge.source);
-            const targetNode = nodes.find((n) => n.id === edge.target);
-            return {
-              source: sourceNode,
-              target: targetNode,
-              type: edge.type,
-            };
+          // 创建变量节点和边
+          const variableNodes = [];
+          const variableEdges = [];
+          sGraphData.allNodes.forEach((node) => {
+            node.variables.forEach((variable, index) => {
+              const varId = `${node.id}_var_${index}`;
+              variableNodes.push({
+                id: varId,
+                parentId: node.id,
+                name: variable.name,
+                value: variable.value,
+                varType: variable.type,
+                isVariable: true,
+                x: node.id * 50 + index * 20,
+                y: node.id * 50 + index * 20
+              });
+              
+              if (variable.type === 'declared') {
+                variableEdges.push({
+                  source: node.id,
+                  target: varId,
+                  type: "variable_declared"
+                });
+              } else if (variable.type === 'referenced') {
+                variableEdges.push({
+                  source: varId,
+                  target: node.id,
+                  type: "variable_referenced"
+                });
+              }
+            });
           });
+
+          // 合并数据
+          const allNodes = [...originalNodes, ...variableNodes];
+          const allLinks = [...sGraphData.allEdges, ...variableEdges];
 
           const width = 800;
           const height = 600;
           const labelOffset = 10;
+          const tooltip = d3.select(".tooltip");
 
-          const svg = d3
-            .select("body")
+          const svg = d3.select("body")
             .append("svg")
             .attr("width", width)
             .attr("height", height);
 
-          // 定义箭头标记
+          // 定义所有箭头标记
           const defs = svg.append("defs");
-
-          // 曲线边箭头
-          defs
-            .append("marker")
+          
+          // 原始曲线边箭头（灰色）
+          defs.append("marker")
             .attr("id", "arrow-curve")
             .attr("viewBox", "0 -3 6 6")
             .attr("refX", 10)
@@ -117,9 +167,8 @@
             .attr("d", "M0,-3L6,0L0,3")
             .attr("class", "arrow-head");
 
-          // 直线边箭头
-          defs
-            .append("marker")
+          // 原始直线边箭头（灰色）
+          defs.append("marker")
             .attr("id", "arrow-line")
             .attr("viewBox", "0 -3 6 6")
             .attr("refX", 10)
@@ -131,23 +180,46 @@
             .attr("d", "M0,-3L6,0L0,3")
             .attr("class", "arrow-head");
 
+          // 变量声明边箭头（蓝色）
+          defs.append("marker")
+            .attr("id", "arrow-declared")
+            .attr("viewBox", "0 -3 6 6")
+            .attr("refX", 10)
+            .attr("refY", 0)
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-3L6,0L0,3")
+            .attr("fill", "#6baed6");
+
+          // 变量引用边箭头（绿色）
+          defs.append("marker")
+            .attr("id", "arrow-referenced")
+            .attr("viewBox", "0 -3 6 6")
+            .attr("refX", 10)
+            .attr("refY", 0)
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-3L6,0L0,3")
+            .attr("fill", "#74c476");
+
           // 创建仿真器
-          const simulation = d3
-            .forceSimulation(nodes)
-            .force(
-              "link",
-              d3
-                .forceLink(links)
-                .id((d) => d.id)
-                .distance(100)
-            )
-            .force("charge", d3.forceManyBody().strength(-100))
+          const simulation = d3.forceSimulation(allNodes)
+            .force("link", d3.forceLink(allLinks).id(d => d.id).distance(d => d.isVariable ? 40 : 100))
+            .force("charge", d3.forceManyBody().strength(d => d.isVariable ? -30 : -100))
             .force("center", d3.forceCenter(width / 2, height / 2));
 
-          // 绘制曲线边
-          const curveLinks = links.filter((d) => d.type === "call");
-          const linkCurves = svg
-            .append("g")
+          // 绘制边
+          const curveLinks = allLinks.filter(d => d.type === "call");
+          const lineLinks = allLinks.filter(d => d.type === "parent");
+          const declaredLinks = allLinks.filter(d => d.type === "variable_declared");
+          const referencedLinks = allLinks.filter(d => d.type === "variable_referenced");
+
+          // 曲线边（call类型）
+          const linkCurves = svg.append("g")
             .selectAll(".link-curve")
             .data(curveLinks)
             .join("path")
@@ -158,10 +230,8 @@
             .on("mouseover", showLinkLabel)
             .on("mouseout", hideLinkLabel);
 
-          // 绘制直线边
-          const lineLinks = links.filter((d) => d.type === "parent");
-          const linkLines = svg
-            .append("g")
+          // 直线边（parent类型）
+          const linkLines = svg.append("g")
             .selectAll(".link-line")
             .data(lineLinks)
             .join("line")
@@ -171,101 +241,135 @@
             .on("mouseover", showLinkLabel)
             .on("mouseout", hideLinkLabel);
 
-          // 绘制边标签
-          const linkLabel = svg
-            .append("g")
+          // 变量声明边
+          const declaredLinkLines = svg.append("g")
+            .selectAll(".declared-link")
+            .data(declaredLinks)
+            .join("line")
+            .attr("class", "declared-link")
+            .attr("stroke", "#6baed6")
+            .attr("stroke-width", 1.5)
+            .attr("stroke-dasharray", "3,2")
+            .attr("marker-end", "url(#arrow-declared)")
+            .on("mouseover", showLinkLabel)
+            .on("mouseout", hideLinkLabel);
+
+          // 变量引用边
+          const referencedLinkLines = svg.append("g")
+            .selectAll(".referenced-link")
+            .data(referencedLinks)
+            .join("line")
+            .attr("class", "referenced-link")
+            .attr("stroke", "#74c476")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrow-referenced)")
+            .on("mouseover", showLinkLabel)
+            .on("mouseout", hideLinkLabel);
+
+          // 边标签
+          const linkLabel = svg.append("g")
             .selectAll(".link-label")
-            .data(links)
+            .data(allLinks)
             .join("text")
             .attr("class", "link-label")
-            .text((d) => d.type);
+            .text(d => d.type)
+            .attr("font-size", 10)
+            .attr("fill", d => {
+              if (d.type === 'variable_declared') return "#6baed6";
+              if (d.type === 'variable_referenced') return "#74c476";
+              return "#666";
+            });
 
           // 绘制节点
-          const node = svg
+          const nodes = svg.append("g")
+            .selectAll(".node")
+            .data(allNodes)
+            .enter();
+
+          // 作用域节点
+          const scopeNodes = nodes.filter(d => !d.isVariable)
             .append("g")
-            .selectAll("circle")
-            .data(nodes)
-            .join("circle")
+            .attr("class", "scope-node");
+
+          scopeNodes.append("circle")
             .attr("r", 8)
             .attr("fill", "#feb24c")
-            .call(
-              d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended)
-            );
+            .call(d3.drag()
+              .on("start", dragstarted)
+              .on("drag", dragged)
+              .on("end", dragended));
 
-          // 节点ID（中心显示）
-          const nodeId = svg
+          scopeNodes.append("text")
+            .attr("class", "node-label")
+            .text(d => d.name)
+            .attr("dx", labelOffset)
+            .attr("dy", "0.3em");
+
+          // 变量节点
+          const varNodes = nodes.filter(d => d.isVariable)
             .append("g")
+            .attr("class", "variable-node");
+
+          varNodes.append("rect")
+            .attr("width", 16)
+            .attr("height", 16)
+            .attr("x", -8)
+            .attr("y", -8)
+            .attr("rx", 3)
+            .attr("class", "variable-node")
+            .on("mouseover", function(event, d) {
+              tooltip
+                .style("opacity", 1)
+                .html(`Value: ${d.value}`)
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 10}px`);
+            })
+            .on("mouseout", () => tooltip.style("opacity", 0))
+            .call(d3.drag()
+              .on("start", dragstarted)
+              .on("drag", dragged)
+              .on("end", dragended));
+
+          varNodes.append("text")
+            .attr("class", "variable-label")
+            .text(d => d.name)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle");
+
+          // 节点ID标签
+          const nodeId = svg.append("g")
             .selectAll(".node-id")
-            .data(nodes)
+            .data(allNodes.filter(d => !d.isVariable))
             .join("text")
             .attr("class", "node-id")
-            .text((d) => d.id+1);
-
-          // 节点名称（右侧显示）
-          const nodeLabel = svg
-            .append("g")
-            .selectAll(".node-label")
-            .data(nodes)
-            .join("text")
-            .attr("class", "node-label")
-            .text((d) => d.name)
-            .attr("dx", labelOffset);
+            .text(d => d.id + 1);
 
           // 动态更新
           simulation.on("tick", () => {
-            // 更新曲线边（增加弯曲度）
-            linkCurves.attr("d", (d) => {
-              const dx = d.target.x - d.source.x;
-              const dy = d.target.y - d.source.y;
-              return `
-                            M${d.source.x},${d.source.y}
-                            Q${(d.source.x + d.target.x) / 2 + dy / 2},
-                             ${(d.source.y + d.target.y) / 2 - dx / 2}
-                             ${d.target.x},${d.target.y}
-                        `;
-            });
-
-            // 更新直线边
-            linkLines
-              .attr("x1", (d) => d.source.x)
-              .attr("y1", (d) => d.source.y)
-              .attr("x2", (d) => d.target.x)
-              .attr("y2", (d) => d.target.y);
-
-            // 更新边标签位置
-            linkLabel
-              .attr("x", (d) => (d.source.x + d.target.x) / 2)
-              .attr("y", (d) => (d.source.y + d.target.y) / 2);
-
+            // 更新边
+            linkCurves.attr("d", curvedPath);
+            linkLines.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                     .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            declaredLinkLines.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            referencedLinkLines.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                              .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+            
             // 更新节点位置
-            node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
-
-            // 更新ID标签位置（居中）
-            nodeId
-              .attr("x", (d) => d.x)
-              .attr("y", (d) => d.y + 2); // +2像素垂直微调
-
-            // 更新名称标签位置（右侧）
-            nodeLabel
-              .attr("x", (d) => d.x + labelOffset)
-              .attr("y", (d) => d.y);
+            scopeNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+            varNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+            
+            // 更新标签
+            linkLabel.attr("x", d => (d.source.x + d.target.x)/2)
+                    .attr("y", d => (d.source.y + d.target.y)/2 + 5);
+            nodeId.attr("x", d => d.x).attr("y", d => d.y + 2);
           });
 
-          // 边标签交互
-          function showLinkLabel(event, d) {
-            linkLabel
-              .filter((labelData) => labelData === d)
-              .transition()
-              .duration(200)
-              .style("opacity", 1);
-          }
-
-          function hideLinkLabel(event, d) {
-            linkLabel
-              .filter((labelData) => labelData === d)
-              .transition()
-              .duration(200)
-              .style("opacity", 0);
+          // 曲线路径生成
+          function curvedPath(d) {
+            const dx = d.target.x - d.source.x;
+            const dy = d.target.y - d.source.y;
+            return `M${d.source.x},${d.source.y} Q${(d.source.x + d.target.x)/2 + dy/2},${(d.source.y + d.target.y)/2 - dx/2} ${d.target.x},${d.target.y}`;
           }
 
           // 拖拽功能
@@ -284,6 +388,17 @@
             if (!event.active) simulation.alphaTarget(0);
             event.subject.fx = null;
             event.subject.fy = null;
+          }
+
+          // 边标签显示控制
+          function showLinkLabel(event, d) {
+            linkLabel.filter(l => l === d)
+                    .transition().duration(200).style("opacity", 1);
+          }
+
+          function hideLinkLabel(event, d) {
+            linkLabel.filter(l => l === d)
+                    .transition().duration(200).style("opacity", 0);
           }
         } catch (error) {
           console.error("Error:", error);

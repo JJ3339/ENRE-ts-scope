@@ -1,6 +1,6 @@
 import {NodePath} from '@babel/traverse';
 import {TSDeclareMethod} from '@babel/types';
-import {ENREEntityCollectionAnyChildren, recordEntityMethod} from '@enre-ts/data';
+import {ENREEntityCollectionAnyChildren, recordEntityMethod, sGraph} from '@enre-ts/data';
 import {toENRELocation} from '@enre-ts/location';
 import ENREName from '@enre-ts/naming';
 import {ENREContext} from '../context';
@@ -26,6 +26,7 @@ export default (path: PathType, {scope}: ENREContext) => {
     );
 
     scope.last<ENREEntityCollectionAnyChildren>().children.push(entity);
+    sGraph.add(entity);
   }
   // TODO: extract parameters
 };

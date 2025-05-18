@@ -28,6 +28,7 @@ import expressionHandler, {
   AscendPostponedTask,
   DescendPostponedTask
 } from './common/expression-handler';
+import { findVariableDefinitionLookUp } from '../VariableCallResolverLookUp';
 
 const buildOnRecord = (kind: variableKind, hasInit: boolean, initValue?: any) => {
   return (name: string, location: ENRELocation, scope: ENREContext['scope']) => {
@@ -44,7 +45,9 @@ const buildOnRecord = (kind: variableKind, hasInit: boolean, initValue?: any) =>
     }
 
     scope.last<ENREEntityCollectionAnyChildren>().children.push(entity);
-    sGraph.addVariable(scope.last(), entity);
+    // 创建带有 declared 状态的变量节点并添加到 sGraph.Variables
+    const declaredVariable = { ...entity, callType: 'declared' };
+    sGraph.addVariable(scope.last(), declaredVariable as ENREEntityVariable);
 
     if (hasInit) {
       // Record relation `set`
@@ -58,6 +61,27 @@ const buildOnRecord = (kind: variableKind, hasInit: boolean, initValue?: any) =>
 
     return entity;
   };
+};
+
+// 递归处理表达式，标记引用的变量
+const processNode = (node: any, scope: ENREContext['scope']) => {
+  if (node.type === 'Identifier') {
+    const variableName = node.name;
+    const currentScope = scope.last();
+
+    // 查找变量定义
+    const { variable } = findVariableDefinitionLookUp(currentScope, variableName);
+    console.log(variable?.name.codeName + '被引用了');
+
+    if (variable) {
+      // 创建带有 referenced 状态的变量节点并添加到 sGraph.Variables
+      const referencedVariable = { ...variable, callType: 'referenced' };
+      sGraph.addVariable(currentScope, referencedVariable as ENREEntityVariable);
+    }
+  } else if (node.type === 'BinaryExpression') {
+    processNode(node.left, scope);
+    processNode(node.right, scope);
+  }
 };
 
 type PathType = NodePath<VariableDeclaration>
@@ -131,6 +155,11 @@ export default {
             scope: scope.last(),
           } as AscendPostponedTask);
         }
+      }
+
+      // 递归处理表达式右侧的变量
+      if (declarator.init) {
+        processNode(declarator.init, scope);
       }
 
       /**

@@ -7,15 +7,16 @@ import {recordEntity} from '../../utils/wrapper';
 
 export interface ENREEntityVariable extends ENREEntityAbilityBase {
   type: 'variable';
-  kind: variableKind;
+  kind?: variableKind;
   value?: any;
+  callType?:  'declared' | 'referenced';
 }
 
 export const createEntityVariable = (
   name: ENREName<any>,
   location: ENRELocation,
   parent: ENREEntityCollectionAll,
-  {kind}: Pick<ENREEntityVariable, 'kind'>
+  {kind}: Pick<ENREEntityVariable, 'kind'>,
 ): ENREEntityVariable => {
   return {
     ...addAbilityBase(name, location, parent),
@@ -23,6 +24,7 @@ export const createEntityVariable = (
     type: 'variable',
 
     kind,
+
   };
 };
 

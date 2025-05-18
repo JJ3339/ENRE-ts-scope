@@ -24,7 +24,9 @@ import {ENREEntityCollectionScoping, postponedTask, sGraph} from '@enre-ts/data'
 import {ENRELocation, toENRELocation, ToENRELocationPolicy} from '@enre-ts/location';
 import {ENREContext} from '../../context';
 import resolveJSObj, {createJSObjRepr, JSObjRepr} from './literal-handler';
-import {resolveFunctionCallLookUp} from '../../FunctionCallResolverLookUp';
+import {resolveFunctionCallLookUp, } from '../../FunctionCallResolverLookUp';
+import { findVariableDefinitionLookUp } from '../../VariableCallResolverLookUp';
+import { ENREEntityVariable } from '@enre-ts/data';
 /**
  * Types
  */
@@ -302,48 +304,46 @@ function recursiveTraverse(
       }
 
       // 处理函数调用
-        // 获取调用者信息
-        const caller = scope.last();
-        let calleeName: string | symbol | undefined = undefined;
+      // 获取调用者信息
+      const caller = scope.last();
+      let calleeName: string | symbol | undefined = undefined;
 
-            // 检查是否为 console.log 调用
-        if (node.callee.type === 'MemberExpression' &&
-            node.callee.object.type === 'Identifier' && node.callee.object.name === 'console' &&
-            node.callee.property.type === 'Identifier' && node.callee.property.name === 'log') {
-            // 若为 console.log 调用，可根据需求调整调用者信息
-          break;
-        }
-    
+      // 检查是否为 console.log 调用
+      if (node.callee.type === 'MemberExpression' &&
+        node.callee.object.type === 'Identifier' && node.callee.object.name === 'console' &&
+        node.callee.property.type === 'Identifier' && node.callee.property.name === 'log') {
+        // 若为 console.log 调用，可根据需求调整调用者信息
+        break;
+      }
 
-        // 获取被调用函数的信息
-        if (node.callee.type === 'MemberExpression') {
-          const calleeProperty = node.callee.property;
-          if (calleeProperty.type === 'Identifier') {
-            calleeName = calleeProperty.name;
-          } else if (calleeProperty.type === 'StringLiteral') {
-            calleeName = calleeProperty.value;
-          } else if (calleeProperty.type === 'NumericLiteral') {
-            calleeName = calleeProperty.value.toString();
-          }
-        } else if (node.callee.type === 'Identifier') {
-          calleeName = node.callee.name;
+      // 获取被调用函数的信息
+      if (node.callee.type === 'MemberExpression') {
+        const calleeProperty = node.callee.property;
+        if (calleeProperty.type === 'Identifier') {
+          calleeName = calleeProperty.name;
+        } else if (calleeProperty.type === 'StringLiteral') {
+          calleeName = calleeProperty.value;
+        } else if (calleeProperty.type === 'NumericLiteral') {
+          calleeName = calleeProperty.value.toString();
         }
+      } else if (node.callee.type === 'Identifier') {
+        calleeName = node.callee.name;
+      }
 
-        const location = toENRELocation(node.callee.loc, ToENRELocationPolicy.PartialEnd);
+      const location = toENRELocation(node.callee.loc, ToENRELocationPolicy.PartialEnd);
 
-        // 调用 FunctionCallResolver 解析函数调用
-        if (typeof calleeName === 'string') {
-          const {resolved,scopeName} = resolveFunctionCallLookUp(caller, calleeName, location);
-          if (resolved) {
-            // 输出
-            console.log(`成功解析函数调用: ${calleeName}，在作用域: ${scopeName} 中找到`);
-          } else {
-            console.log(`未能解析函数调用: ${calleeName}`);
-          }
+      // 调用 FunctionCallResolver 解析函数调用
+      if (typeof calleeName === 'string') {
+        const { resolved, scopeName } = resolveFunctionCallLookUp(caller, calleeName, location);
+        if (resolved) {
+          // 输出
+          console.log(`成功解析函数调用: ${calleeName}，在作用域: ${scopeName} 中找到`);
+        } else {
+          console.log(`未能解析函数调用: ${calleeName}`);
         }
-        else {
-          console.log('未能获取被调用函数的名称');
-        }
+      } else {
+        console.log('未能获取被调用函数的名称');
+      }
 
       tokenStream.push({
         operation,
