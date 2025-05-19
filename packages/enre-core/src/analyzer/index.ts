@@ -75,7 +75,20 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
     } else {
       console.log("无变量声明");
     }
+
+    if(node.modules.length > 0) {
+      node.modules.forEach((module, modIndex) => {
+        console.log(
+          `节点 ${index + 1}下:模块 ${modIndex + 1}: ${module.name.codeName}`
+        );
+      });
+    } else { 
+      console.log("无模块声明");
+    }
+
   });
+
+  
 
   // 打印所有边信息
   console.log("\n所有作用域边信息:");

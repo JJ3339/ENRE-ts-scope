@@ -56,7 +56,9 @@ export default {
     }
 
     scope.push(entity);
-    //sGraph.add(entity);
+    sGraph.add(entity);
+    sGraph.addModule(scope.last(), entity as ENREEntityNamespace);
+
   },
 
   exit: (path: PathType, {scope}: ENREContext) => {
