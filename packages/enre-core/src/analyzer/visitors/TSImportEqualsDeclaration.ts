@@ -49,39 +49,34 @@ export default {
     // 获取导入的目标
     const importedTarget = path.node.moduleReference;
 
-    let resolvedModule: ENREEntityCollectionAll | undefined;
-    let searchingGuidance: SearchingGuidance | undefined;
+    let importSourceName: string | undefined;
 
     // 检查导入的目标类型
     if (importedTarget.type === 'TSExternalModuleReference') {
       // 外部模块引用
       const moduleSpecifier = (importedTarget.expression as any).value;
-      resolvedModule = moduleResolver(currentScope as ENREEntityFile, moduleSpecifier);
-      if (resolvedModule) {
-        searchingGuidance = {
-          role: 'any',
-          identifier: moduleSpecifier,
-          at: resolvedModule as ENREEntityCollectionScoping,
-        };
-      }
+      importSourceName = moduleSpecifier;
     } else if (importedTarget.type === 'Identifier') {
       // 命名空间引用
-      const namespaceName = importedTarget.name;
-      resolvedModule = sGraph.where({
-        type: 'namespace',
-        name: namespaceName,
-        parent: currentScope
-      }).map(result => result.entity)[0];
-      if (resolvedModule) {
-        searchingGuidance = {
-          role: 'any',
-          identifier: namespaceName,
-          at: currentScope
-        };
+      importSourceName = importedTarget.name;
+    } else if (importedTarget.type === 'TSQualifiedName') {
+      // 处理 TSQualifiedName 类型
+      const parts = [];
+      let current: any = importedTarget;
+      while (current.type === 'TSQualifiedName') {
+        parts.unshift(current.right.name);
+        current = current.left;
       }
+      parts.unshift(current.name);
+
+      // 取 . 左侧部分作为 Import 来源
+      importSourceName = parts[0];
     }
 
-    if (resolvedModule && searchingGuidance) {
+    if (importSourceName) {
+      // 在当前作用域中添加引用模块记录
+      sGraph.addImportedNamespace(currentScope, importSourceName);
+
       // 检查是否已有同名的别名实体
       let aliasEntity: ENREEntityAlias<ENRERelationImport> | undefined;
       for (const sibling of currentScope.children) {
@@ -104,7 +99,11 @@ export default {
       const pseudoImportRelation: ENREPseudoRelation<ENRERelationImport, "to"> = {
         type: 'import',
         from: currentScope,
-        to: searchingGuidance,
+        to: {
+          role: 'any',
+          identifier: importSourceName,
+          at: currentScope
+        },
         location: toENRELocation(path.node.loc),
         sourceRange: toENRELocation(importedTarget.loc),
         kind: symbolRole,
@@ -114,8 +113,7 @@ export default {
       pseudoR.add<ENRERelationImport>(pseudoImportRelation);
 
       scope.push(aliasEntity);
-      sGraph.add(aliasEntity);
-      sGraph.addModule(currentScope, aliasEntity as any);
+      //sGraph.add(aliasEntity);
     }
   },
 

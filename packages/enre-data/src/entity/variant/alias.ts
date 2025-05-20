@@ -16,6 +16,7 @@ export interface ENREEntityAlias<T extends Aliasable = Aliasable> extends ENREEn
    * The binding is automatically performed (in the relation side).
    */
   ofRelation: T;
+  kind?: string;
 }
 
 export const createEntityAlias = <T extends Aliasable>(

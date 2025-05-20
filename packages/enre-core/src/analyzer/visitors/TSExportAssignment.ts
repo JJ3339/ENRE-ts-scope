@@ -7,7 +7,7 @@
 
 import {NodePath} from '@babel/traverse';
 import {TSExportAssignment} from '@babel/types';
-import {ENRERelationExport, pseudoR} from '@enre-ts/data';
+import {ENRERelationExport, pseudoR, sGraph} from '@enre-ts/data';
 import {ENREContext} from '../context';
 import {toENRELocation} from '@enre-ts/location';
 

@@ -49,7 +49,8 @@ export type ENREEntityCollectionScoping =
   | ENREEntityTypeAlias
   | ENREEntityEnum
   | ENREEntityInterface
-  | ENREEntityBlock;
+  | ENREEntityBlock
+  | ENREEntityAlias;
 
 export type ENREEntityCollectionAnyChildren =
   ENREEntityFile

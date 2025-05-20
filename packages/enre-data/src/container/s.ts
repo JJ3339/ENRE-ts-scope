@@ -1,10 +1,15 @@
 // packages/enre-data/src/container/s.ts
+import { Scope } from "@babel/traverse";
 import {
+  ENREEntityCollectionAll,
   ENREEntityCollectionScoping,
   ENREEntityFunction,
   ENREEntityNamespace,
   ENREEntityVariable,
+  ENRERelationExport,
 } from "@enre-ts/data";
+import { scale } from "sigma/dist/declarations/src/utils";
+import { add } from "winston";
 
 // 定义作用域图的节点
 class ScopeNode {
@@ -14,8 +19,8 @@ class ScopeNode {
     public variables: ENREEntityVariable[] = [],
     public functions: ENREEntityFunction[] = [],
     public modules: ENREEntityNamespace[] = [],
-    public imports: ENREEntityNamespace[] = [],
-    public exports: ENREEntityNamespace[] = [],
+    public importNamespaces: string[] = [],
+    public exportVariables: ENREEntityVariable[] = [],
   ) {}
 }
 
@@ -32,7 +37,7 @@ class ScopeEdge {
 export interface ENREScopePredicates {
   type?: string;
   name?: string | RegExp;
-  parent?: ENREEntityCollectionScoping;
+  parent?: ENREEntityCollectionScoping | ENRERelationExport;
   child?: ENREEntityCollectionScoping;
   // 可以根据需要添加更多查询条件
 }
@@ -81,17 +86,17 @@ const createScopeContainer = () => {
       }
     },
 
-    addImportedNamespace: (scope: ENREEntityCollectionScoping, namespace: ENREEntityNamespace) => {
+    addImportedNamespace: (scope: ENREEntityCollectionScoping, namespaceName: string) => {
         const scopeNode = _s.find((node) => node.entity === scope);
         if (scopeNode) {
-            scopeNode.imports.push(namespace);
+            scopeNode.importNamespaces.push(namespaceName);
         }
     },
     
-    addExportedNamespace: (scope: ENREEntityCollectionScoping, namespace: ENREEntityNamespace) => {
+    addExportedVariable: ( scope: ENREEntityCollectionScoping, variable: ENREEntityVariable) => {
         const scopeNode = _s.find((node) => node.entity === scope);
         if (scopeNode) {
-            scopeNode.exports.push(namespace);
+            scopeNode.exportVariables.push(variable);
         }
     },
 

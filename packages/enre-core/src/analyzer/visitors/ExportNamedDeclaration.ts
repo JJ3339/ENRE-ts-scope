@@ -14,24 +14,30 @@ import {
   ExportNamedDeclaration,
   ExportNamespaceSpecifier,
   ExportSpecifier,
-  ImportSpecifier
+  ImportSpecifier,
+  VariableDeclaration,
+  Declaration
 } from '@babel/types';
 import {
   ENREEntityAlias,
   ENREEntityFile,
   ENREEntityNamespace,
+  ENREEntityVariable,
   ENRELogEntry,
   ENRERelationExport,
   id,
   pseudoR,
   recordEntityAlias,
-  recordRelationExport
+  recordRelationExport,
+  recordEntityVariable,
+  sGraph
 } from '@enre-ts/data';
 import {toENRELocation, ToENRELocationPolicy} from '@enre-ts/location';
 import {ENREContext} from '../context';
 import {ModifierType} from '../context/modifier';
 import moduleResolver from '../module-resolver';
 import ENREName from '@enre-ts/naming';
+import {variableKind} from '@enre-ts/shared';
 
 type PathType = NodePath<ExportNamedDeclaration>
 
@@ -76,6 +82,8 @@ export default {
     if (path.node.source) {
       const resolvedModule = moduleResolver(lastScope as ENREEntityFile, path.node.source.value) as ENREEntityFile;
       if (resolvedModule) {
+        //sGraph.add(resolvedModule);
+
         const sps = path.node.specifiers;
 
         if (sps.length === 0) {
@@ -200,11 +208,32 @@ export default {
          * and they should all be exported.
          */
         if (path.node.declaration.type === 'VariableDeclaration') {
-          for (const decl of path.node.declaration.declarations) {
+          const varDecl = path.node.declaration as VariableDeclaration;
+          for (const decl of varDecl.declarations) {
             validRange.push(toENRELocation(decl.id.loc, ToENRELocationPolicy.Full));
+            if (decl.id.type === 'Identifier') {
+              const declaredEntity = recordEntityVariable(
+                new ENREName('Norm', decl.id.name),
+                toENRELocation(decl.id.loc),
+                lastScope,
+                { kind: varDecl.kind as variableKind }
+              );
+              sGraph.addExportedVariable(scope.last(), declaredEntity);
+            }
           }
         } else if ('id' in path.node.declaration) {
-          validRange.push(toENRELocation(path.node.declaration.id!.loc, ToENRELocationPolicy.Full));
+          const decl = path.node.declaration as Declaration & { id: any };
+          validRange.push(toENRELocation(decl.id.loc, ToENRELocationPolicy.Full));
+          if (decl.id.type === 'Identifier') {
+            // 这里需要根据具体的声明类型来记录实体，示例假设是变量声明
+            const declaredEntity = recordEntityVariable(
+              new ENREName('Norm', decl.id.name),
+              toENRELocation(decl.id.loc),
+              lastScope,
+              { kind: 'var' } // 这里的 kind 需要根据实际情况调整
+            );
+            sGraph.add(declaredEntity);
+          }
         }
 
         modifiers.set(key, {
