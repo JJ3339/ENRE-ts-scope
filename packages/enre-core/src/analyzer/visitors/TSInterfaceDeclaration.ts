@@ -16,7 +16,8 @@ import {
   ENRERelationExtend,
   id,
   pseudoR,
-  recordEntityInterface
+  recordEntityInterface,
+  sGraph
 } from '@enre-ts/data';
 import {toENRELocation} from '@enre-ts/location';
 import {ENREContext} from '../context';
@@ -63,6 +64,7 @@ export default {
     }
 
     scope.push(entity);
+    sGraph.add(entity);
   },
 
   exit: (path: PathType, {scope}: ENREContext) => {

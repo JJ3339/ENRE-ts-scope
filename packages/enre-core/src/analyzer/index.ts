@@ -66,9 +66,7 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
     if (node.variables.length > 0) {
       node.variables.forEach((variable, varIndex) => {
         console.log(
-          `节点 ${index + 1}下:变量 ${varIndex + 1}: ${variable.name.codeName}数值为：${
-            variable.value
-          }`
+          `节点 ${index + 1}下:变量 ${varIndex + 1}: ${variable.name.codeName}`
         );
         console.log(`  变量类型: ${variable.callType}`);
       });
@@ -103,7 +101,7 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
         );
       });
     }else{  
-      console.log("!!!");
+      console.log("无可导出变量");
     }
 
   });
@@ -119,7 +117,7 @@ export const analyze = async (fileEntity: ENREEntityFile) => {
     console.log(`  终点: ${edge.to.entity.name.codeName || edge.to.entity.name}`);
   });
 
-/* // 创建 Express 应用
+// 创建 Express 应用
 const app = express();
 const port = 3000;
 
@@ -142,7 +140,10 @@ app.get("/sGraph", (req, res) => {
         name: variable.name.codeName,
         value: variable.value,
         type: variable.callType
-      }))
+      })),
+      importNamespaces: node.importNamespaces.map(namespace => ({
+        name: namespace
+      })),
     };
   });
 
@@ -173,6 +174,6 @@ app.get("/sGraph", (req, res) => {
 // 启动服务器
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-}); */
+}); 
 
 };

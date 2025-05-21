@@ -84,6 +84,57 @@
         font-size: 12px;
         font-family: sans-serif;
       }
+
+      .namespace-node {
+        fill: #e5f5e0;
+        stroke: #31a354;
+        stroke-width: 1.5px;
+      }
+
+      .namespace-label {
+        font-family: sans-serif;
+        font-size: 10px;
+        pointer-events: none;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+
+      .namespace-link {
+        stroke: #31a354;
+        stroke-opacity: 0.6;
+        fill: none;
+      }
+
+      .arrow-head-hollow {
+        fill: none;
+        stroke: #31a354;
+        stroke-width: 1.5px;
+      }
+
+      .import-namespace-node {
+        fill: #fdd0a2;
+        stroke: #e6550d;
+        stroke-width: 1.5px;
+      }
+
+      .import-namespace-label {
+        font-family: sans-serif;
+        font-size: 10px;
+        pointer-events: none;
+        text-anchor: middle;
+        dominant-baseline: middle;
+      }
+
+      .import-namespace-link {
+        stroke: #e6550d;
+        stroke-opacity: 0.6;
+        fill: none;
+      }
+
+      .arrow-head-double {
+        fill: #e6550d;
+        stroke: none;
+      }
     </style>
   </head>
   <body>
@@ -100,6 +151,8 @@
             name: node.name,
             type: node.type,
             isVariable: false,
+            isNamespace: false,
+            isImportNamespace: false,
             x: Math.random() * 800,
             y: Math.random() * 600,
           }));
@@ -117,45 +170,127 @@
                 value: variable.value,
                 varType: variable.type,
                 isVariable: true,
+                isNamespace: false,
+                isImportNamespace: false,
                 x: node.id * 50 + index * 20,
-                y: node.id * 50 + index * 20
+                y: node.id * 50 + index * 20,
               });
-              
-              if (variable.type === 'declared') {
+
+              if (variable.type === "declared") {
                 variableEdges.push({
                   source: node.id,
                   target: varId,
-                  type: "variable_declared"
+                  type: "variable_declared",
                 });
-              } else if (variable.type === 'referenced') {
+              } else if (variable.type === "referenced") {
                 variableEdges.push({
                   source: varId,
                   target: node.id,
-                  type: "variable_referenced"
+                  type: "variable_referenced",
                 });
               }
             });
           });
 
+          // 创建命名空间节点和边
+          const namespaceNodes = [];
+          const namespaceEdges = [];
+          originalNodes.forEach((node) => {
+            if (node.type === "namespace") {
+              const namespaceId = `${node.id}_namespace`;
+              namespaceNodes.push({
+                id: namespaceId,
+                parentId: node.id,
+                name: node.name,
+                isVariable: false,
+                isNamespace: true,
+                isImportNamespace: false,
+                x: node.x + 50,
+                y: node.y + 50,
+              });
+
+              // 空心箭头从方块节点指向本作用域节点
+              namespaceEdges.push({
+                source: namespaceId,
+                target: node.id,
+                type: "namespace_to_scope",
+              });
+
+              // 找到父节点
+              const parentNode = originalNodes.find(
+                (n) =>
+                  n.id === sGraphData.allEdges.find((e) => e.target === node.id)?.source
+              );
+              if (parentNode) {
+                // 实心箭头从父节点指向方块节点
+                namespaceEdges.push({
+                  source: parentNode.id,
+                  target: namespaceId,
+                  type: "parent_to_namespace",
+                });
+              }
+            }
+          });
+
+          // 创建导入命名空间节点和边
+          const importNamespaceNodes = [];
+          const importNamespaceEdges = [];
+          sGraphData.allNodes.forEach((node) => {
+            if(node.importNamespaces !== undefined){
+              node.importNamespaces.forEach((importNamespace, index) => {
+                console.log(importNamespace);
+                const importNamespaceId = `${node.id}_import_${index}`;
+                importNamespaceNodes.push({
+                  id: importNamespaceId,
+                  parentId: node.id,
+                  name: importNamespace.name,
+                  isVariable: false,
+                  isNamespace: false,
+                  isImportNamespace: true,
+                  x: node.x + (index + 1) * 50,
+                  y: node.y + 100,
+                });
+
+                importNamespaceEdges.push({
+                  source: node.id,
+                  target: importNamespaceId,
+                  type: "import_namespace_link",
+                });
+              });
+            }
+          });
+
           // 合并数据
-          const allNodes = [...originalNodes, ...variableNodes];
-          const allLinks = [...sGraphData.allEdges, ...variableEdges];
+          const allNodes = [
+            ...originalNodes,
+            ...variableNodes,
+            ...namespaceNodes,
+            ...importNamespaceNodes,
+          ];
+          const allLinks = [
+            ...sGraphData.allEdges,
+            ...variableEdges,
+            ...namespaceEdges,
+            ...importNamespaceEdges,
+          ];
 
           const width = 800;
           const height = 600;
           const labelOffset = 10;
           const tooltip = d3.select(".tooltip");
 
-          const svg = d3.select("body")
+          const svg = d3
+            .select("body")
             .append("svg")
             .attr("width", width)
             .attr("height", height);
 
           // 定义所有箭头标记
           const defs = svg.append("defs");
-          
+
           // 原始曲线边箭头（灰色）
-          defs.append("marker")
+          defs
+            .append("marker")
             .attr("id", "arrow-curve")
             .attr("viewBox", "0 -3 6 6")
             .attr("refX", 10)
@@ -168,7 +303,8 @@
             .attr("class", "arrow-head");
 
           // 原始直线边箭头（灰色）
-          defs.append("marker")
+          defs
+            .append("marker")
             .attr("id", "arrow-line")
             .attr("viewBox", "0 -3 6 6")
             .attr("refX", 10)
@@ -181,7 +317,8 @@
             .attr("class", "arrow-head");
 
           // 变量声明边箭头（蓝色）
-          defs.append("marker")
+          defs
+            .append("marker")
             .attr("id", "arrow-declared")
             .attr("viewBox", "0 -3 6 6")
             .attr("refX", 10)
@@ -194,7 +331,8 @@
             .attr("fill", "#6baed6");
 
           // 变量引用边箭头（绿色）
-          defs.append("marker")
+          defs
+            .append("marker")
             .attr("id", "arrow-referenced")
             .attr("viewBox", "0 -3 6 6")
             .attr("refX", 10)
@@ -206,20 +344,84 @@
             .attr("d", "M0,-3L6,0L0,3")
             .attr("fill", "#74c476");
 
+          // 命名空间空心箭头
+          defs
+            .append("marker")
+            .attr("id", "arrow-namespace-hollow")
+            .attr("viewBox", "0 -3 6 6")
+            .attr("refX", 10)
+            .attr("refY", 0)
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-3L6,0L0,3")
+            .attr("class", "arrow-head-hollow");
+
+          // 命名空间实心箭头
+          defs
+            .append("marker")
+            .attr("id", "arrow-namespace-solid")
+            .attr("viewBox", "0 -3 6 6")
+            .attr("refX", 10)
+            .attr("refY", 0)
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-3L6,0L0,3")
+            .attr("fill", "#31a354");
+
+          // 导入命名空间双箭头
+          defs
+            .append("marker")
+            .attr("id", "arrow-double")
+            .attr("viewBox", "0 -3 6 6")
+            .attr("refX", 10)
+            .attr("refY", 0)
+            .attr("markerWidth", 8)
+            .attr("markerHeight", 8)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-3L6,0L0,3")
+            .attr("class", "arrow-head-double");
+
           // 创建仿真器
-          const simulation = d3.forceSimulation(allNodes)
-            .force("link", d3.forceLink(allLinks).id(d => d.id).distance(d => d.isVariable ? 40 : 100))
-            .force("charge", d3.forceManyBody().strength(d => d.isVariable ? -30 : -100))
+          const simulation = d3
+            .forceSimulation(allNodes)
+            .force(
+              "link",
+              d3
+                .forceLink(allLinks)
+                .id((d) => d.id)
+                .distance((d) => (d.isVariable ? 40 : 100))
+            )
+            .force(
+              "charge",
+              d3.forceManyBody().strength((d) => (d.isVariable ? -30 : -100))
+            )
             .force("center", d3.forceCenter(width / 2, height / 2));
 
           // 绘制边
-          const curveLinks = allLinks.filter(d => d.type === "call");
-          const lineLinks = allLinks.filter(d => d.type === "parent");
-          const declaredLinks = allLinks.filter(d => d.type === "variable_declared");
-          const referencedLinks = allLinks.filter(d => d.type === "variable_referenced");
+          const curveLinks = allLinks.filter((d) => d.type === "call");
+          const lineLinks = allLinks.filter((d) => d.type === "parent");
+          const declaredLinks = allLinks.filter((d) => d.type === "variable_declared");
+          const referencedLinks = allLinks.filter(
+            (d) => d.type === "variable_referenced"
+          );
+          const namespaceToScopeLinks = allLinks.filter(
+            (d) => d.type === "namespace_to_scope"
+          );
+          const parentToNamespaceLinks = allLinks.filter(
+            (d) => d.type === "parent_to_namespace"
+          );
+          const importNamespaceLinks = allLinks.filter(
+            (d) => d.type === "import_namespace_link"
+          );
 
           // 曲线边（call类型）
-          const linkCurves = svg.append("g")
+          const linkCurves = svg
+            .append("g")
             .selectAll(".link-curve")
             .data(curveLinks)
             .join("path")
@@ -231,7 +433,8 @@
             .on("mouseout", hideLinkLabel);
 
           // 直线边（parent类型）
-          const linkLines = svg.append("g")
+          const linkLines = svg
+            .append("g")
             .selectAll(".link-line")
             .data(lineLinks)
             .join("line")
@@ -242,7 +445,8 @@
             .on("mouseout", hideLinkLabel);
 
           // 变量声明边
-          const declaredLinkLines = svg.append("g")
+          const declaredLinkLines = svg
+            .append("g")
             .selectAll(".declared-link")
             .data(declaredLinks)
             .join("line")
@@ -255,7 +459,8 @@
             .on("mouseout", hideLinkLabel);
 
           // 变量引用边
-          const referencedLinkLines = svg.append("g")
+          const referencedLinkLines = svg
+            .append("g")
             .selectAll(".referenced-link")
             .data(referencedLinks)
             .join("line")
@@ -266,58 +471,99 @@
             .on("mouseover", showLinkLabel)
             .on("mouseout", hideLinkLabel);
 
+          // 命名空间到作用域边
+          const namespaceToScopeLinkLines = svg
+            .append("g")
+            .selectAll(".namespace-link")
+            .data(namespaceToScopeLinks)
+            .join("line")
+            .attr("class", "namespace-link")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrow-namespace-hollow)")
+            .on("mouseover", showLinkLabel)
+            .on("mouseout", hideLinkLabel);
+
+          // 父节点到命名空间边
+          const parentToNamespaceLinkLines = svg
+            .append("g")
+            .selectAll(".namespace-link")
+            .data(parentToNamespaceLinks)
+            .join("line")
+            .attr("class", "namespace-link")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrow-namespace-solid)")
+            .on("mouseover", showLinkLabel)
+            .on("mouseout", hideLinkLabel);
+
+          // 导入命名空间边
+          const importNamespaceLinkLines = svg
+            .append("g")
+            .selectAll(".import-namespace-link")
+            .data(importNamespaceLinks)
+            .join("line")
+            .attr("class", "import-namespace-link")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrow-double)")
+            .on("mouseover", showLinkLabel)
+            .on("mouseout", hideLinkLabel);
+
           // 边标签
-          const linkLabel = svg.append("g")
+          const linkLabel = svg
+            .append("g")
             .selectAll(".link-label")
             .data(allLinks)
             .join("text")
             .attr("class", "link-label")
-            .text(d => d.type)
+            .text((d) => d.type)
             .attr("font-size", 10)
-            .attr("fill", d => {
-              if (d.type === 'variable_declared') return "#6baed6";
-              if (d.type === 'variable_referenced') return "#74c476";
+            .attr("fill", (d) => {
+              if (d.type === "variable_declared") return "#6baed6";
+              if (d.type === "variable_referenced") return "#74c476";
+              if (d.type === "namespace_to_scope" || d.type === "parent_to_namespace")
+                return "#31a354";
+              if (d.type === "import_namespace_link") return "#e6550d";
               return "#666";
             });
 
           // 绘制节点
-          const nodes = svg.append("g")
-            .selectAll(".node")
-            .data(allNodes)
-            .enter();
+          const nodes = svg.append("g").selectAll(".node").data(allNodes).enter();
 
           // 作用域节点
-          const scopeNodes = nodes.filter(d => !d.isVariable)
+          const scopeNodes = nodes
+            .filter((d) => !d.isVariable && !d.isNamespace && !d.isImportNamespace)
             .append("g")
             .attr("class", "scope-node");
 
-          scopeNodes.append("circle")
+          scopeNodes
+            .append("circle")
             .attr("r", 8)
             .attr("fill", "#feb24c")
-            .call(d3.drag()
-              .on("start", dragstarted)
-              .on("drag", dragged)
-              .on("end", dragended));
+            .call(
+              d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended)
+            );
 
-          scopeNodes.append("text")
+          scopeNodes
+            .append("text")
             .attr("class", "node-label")
-            .text(d => d.name)
+            .text((d) => d.name)
             .attr("dx", labelOffset)
             .attr("dy", "0.3em");
 
           // 变量节点
-          const varNodes = nodes.filter(d => d.isVariable)
+          const varNodes = nodes
+            .filter((d) => d.isVariable)
             .append("g")
             .attr("class", "variable-node");
 
-          varNodes.append("rect")
+          varNodes
+            .append("rect")
             .attr("width", 16)
             .attr("height", 16)
             .attr("x", -8)
             .attr("y", -8)
             .attr("rx", 3)
             .attr("class", "variable-node")
-            .on("mouseover", function(event, d) {
+            .on("mouseover", function (event, d) {
               tooltip
                 .style("opacity", 1)
                 .html(`Value: ${d.value}`)
@@ -325,51 +571,131 @@
                 .style("top", `${event.pageY - 10}px`);
             })
             .on("mouseout", () => tooltip.style("opacity", 0))
-            .call(d3.drag()
-              .on("start", dragstarted)
-              .on("drag", dragged)
-              .on("end", dragended));
+            .call(
+              d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended)
+            );
 
-          varNodes.append("text")
+          varNodes
+            .append("text")
             .attr("class", "variable-label")
-            .text(d => d.name)
+            .text((d) => d.name)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "middle");
 
+          // 命名空间节点
+          const namespaceRects = nodes
+            .filter((d) => d.isNamespace)
+            .append("g")
+            .attr("class", "namespace-node");
+
+          namespaceRects
+            .append("rect")
+            .attr("width", 40)
+            .attr("height", 20)
+            .attr("x", -20)
+            .attr("y", -10)
+            .attr("rx", 3)
+            .attr("class", "namespace-node")
+            .call(
+              d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended)
+            );
+
+          namespaceRects
+            .append("text")
+            .attr("class", "namespace-label")
+            .text((d) => d.name);
+
+          // 导入命名空间节点
+          const importNamespaceRects = nodes
+            .filter((d) => d.isImportNamespace)
+            .append("g")
+            .attr("class", "import-namespace-node");
+
+          importNamespaceRects
+            .append("rect")
+            .attr("width", 40)
+            .attr("height", 20)
+            .attr("x", -20)
+            .attr("y", -10)
+            .attr("rx", 3)
+            .attr("class", "import-namespace-node")
+            .call(
+              d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended)
+            );
+
+          importNamespaceRects
+            .append("text")
+            .attr("class", "import-namespace-label")
+            .text((d) => d.name);
+
           // 节点ID标签
-          const nodeId = svg.append("g")
+          const nodeId = svg
+            .append("g")
             .selectAll(".node-id")
-            .data(allNodes.filter(d => !d.isVariable))
+            .data(
+              allNodes.filter(
+                (d) => !d.isVariable && !d.isNamespace && !d.isImportNamespace
+              )
+            )
             .join("text")
             .attr("class", "node-id")
-            .text(d => d.id + 1);
+            .text((d) => d.id + 1);
 
           // 动态更新
           simulation.on("tick", () => {
             // 更新边
             linkCurves.attr("d", curvedPath);
-            linkLines.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-                     .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-            declaredLinkLines.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-                            .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-            referencedLinkLines.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-                              .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-            
+            linkLines
+              .attr("x1", (d) => d.source.x)
+              .attr("y1", (d) => d.source.y)
+              .attr("x2", (d) => d.target.x)
+              .attr("y2", (d) => d.target.y);
+            declaredLinkLines
+              .attr("x1", (d) => d.source.x)
+              .attr("y1", (d) => d.source.y)
+              .attr("x2", (d) => d.target.x)
+              .attr("y2", (d) => d.target.y);
+            referencedLinkLines
+              .attr("x1", (d) => d.source.x)
+              .attr("y1", (d) => d.source.y)
+              .attr("x2", (d) => d.target.x)
+              .attr("y2", (d) => d.target.y);
+            namespaceToScopeLinkLines
+              .attr("x1", (d) => d.source.x)
+              .attr("y1", (d) => d.source.y)
+              .attr("x2", (d) => d.target.x)
+              .attr("y2", (d) => d.target.y);
+            parentToNamespaceLinkLines
+              .attr("x1", (d) => d.source.x)
+              .attr("y1", (d) => d.source.y)
+              .attr("x2", (d) => d.target.x)
+              .attr("y2", (d) => d.target.y);
+            importNamespaceLinkLines
+              .attr("x1", (d) => d.source.x)
+              .attr("y1", (d) => d.source.y)
+              .attr("x2", (d) => d.target.x)
+              .attr("y2", (d) => d.target.y);
+
             // 更新节点位置
-            scopeNodes.attr("transform", d => `translate(${d.x},${d.y})`);
-            varNodes.attr("transform", d => `translate(${d.x},${d.y})`);
-            
+            scopeNodes.attr("transform", (d) => `translate(${d.x},${d.y})`);
+            varNodes.attr("transform", (d) => `translate(${d.x},${d.y})`);
+            namespaceRects.attr("transform", (d) => `translate(${d.x},${d.y})`);
+            importNamespaceRects.attr("transform", (d) => `translate(${d.x},${d.y})`);
+
             // 更新标签
-            linkLabel.attr("x", d => (d.source.x + d.target.x)/2)
-                    .attr("y", d => (d.source.y + d.target.y)/2 + 5);
-            nodeId.attr("x", d => d.x).attr("y", d => d.y + 2);
+            linkLabel
+              .attr("x", (d) => (d.source.x + d.target.x) / 2)
+              .attr("y", (d) => (d.source.y + d.target.y) / 2 + 5);
+            nodeId.attr("x", (d) => d.x).attr("y", (d) => d.y + 2);
           });
 
           // 曲线路径生成
           function curvedPath(d) {
             const dx = d.target.x - d.source.x;
             const dy = d.target.y - d.source.y;
-            return `M${d.source.x},${d.source.y} Q${(d.source.x + d.target.x)/2 + dy/2},${(d.source.y + d.target.y)/2 - dx/2} ${d.target.x},${d.target.y}`;
+            return `M${d.source.x},${d.source.y} Q${
+              (d.source.x + d.target.x) / 2 + dy / 2
+            },${(d.source.y + d.target.y) / 2 - dx / 2} ${d.target.x},${d.target.y}`;
           }
 
           // 拖拽功能
@@ -392,13 +718,19 @@
 
           // 边标签显示控制
           function showLinkLabel(event, d) {
-            linkLabel.filter(l => l === d)
-                    .transition().duration(200).style("opacity", 1);
+            linkLabel
+              .filter((l) => l === d)
+              .transition()
+              .duration(200)
+              .style("opacity", 1);
           }
 
           function hideLinkLabel(event, d) {
-            linkLabel.filter(l => l === d)
-                    .transition().duration(200).style("opacity", 0);
+            linkLabel
+              .filter((l) => l === d)
+              .transition()
+              .duration(200)
+              .style("opacity", 0);
           }
         } catch (error) {
           console.error("Error:", error);
